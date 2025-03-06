@@ -1,6 +1,7 @@
 package com.filipe.pulsarproject;
 
 
+import com.filipe.pulsarproject.setup.*;
 import org.apache.pulsar.client.api.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -9,7 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.testcontainers.containers.PulsarContainer;
 
-@Import(TestcontainersConfiguration.class)
+@Import(TestcontainersSetup.class)
 @SpringBootTest
 class PulsarProjectApplicationTests {
 
@@ -45,6 +46,7 @@ class PulsarProjectApplicationTests {
         }
 
         Assertions.assertNotNull(receive);
+        Assertions.assertEquals(1, receive.getValue().getNumber());
 
         System.out.println(receive.getValue().toString());
 
