@@ -1,5 +1,7 @@
 package com.filipe.integrationtest.setup;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -11,8 +13,10 @@ import org.testcontainers.utility.MountableFile;
 import java.nio.file.Path;
 
 
+@Slf4j
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersSetup {
+
 
     @Bean
     public PulsarContainer pulsarContainer() {
@@ -37,4 +41,17 @@ public class TestcontainersSetup {
                 .serviceUrl(pulsarContainer.getPulsarBrokerUrl())
                 .build();
     }
+
+    @Bean
+    public PulsarAdmin pulsarAdmin(PulsarContainer pulsarContainer) throws Exception {
+        return  PulsarAdmin.builder()
+                .serviceHttpUrl(pulsarContainer.getHttpServiceUrl())
+                .build();
+
+    }
+
+
+
+
+
 }

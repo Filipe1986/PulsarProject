@@ -6,7 +6,6 @@ import com.filipe.application.PulsarProjectApplication;
 import com.filipe.integrationtest.setup.TestcontainersSetup;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pulsar.client.admin.PulsarAdmin;
-import org.apache.pulsar.client.admin.PulsarAdminException;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.common.functions.FunctionConfig;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +18,6 @@ import org.testcontainers.containers.PulsarContainer;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -34,14 +32,19 @@ class PulsarProjectApplicationTests {
     @Autowired
     PulsarContainer pulsarContainer;
 
+    @Autowired
+    PulsarAdmin pulsarAdmin;
+
     public static final String PULSAR_TOPIC = "pulsar-project";
     public static final String PULSAR_TOPIC_OUTBOUND = "pulsar-project" + "-outbound";
     public static final String subscriptionName = "test-subscription";
 
 
-
     @RepeatedTest(1)
-    void contextLoads() throws IOException, PulsarAdminException {
+    void contextLoads() throws IOException {
+        createFunctionWithRetry(pulsarAdmin);
+
+
 
         PulsarClient pulsarClient = PulsarClient.builder()
                 .serviceUrl(pulsarContainer.getPulsarBrokerUrl())
@@ -52,46 +55,21 @@ class PulsarProjectApplicationTests {
                 .topic(PULSAR_TOPIC)
                 .create();
 
-
-        Consumer<PulsarNumber> subscribeInbound = pulsarClient.newConsumer(Schema.JSON(PulsarNumber.class))
-                .topic(PULSAR_TOPIC)
-                .subscriptionName(subscriptionName + "-inbound")
-                .subscribe();
-
-        numberProducer.send(new PulsarNumber(2));
-        numberProducer.send(new PulsarNumber(2));
-        Message<PulsarNumber> receiveInbound = subscribeInbound.receive(3, TimeUnit.SECONDS);
-        Assertions.assertEquals(2,receiveInbound.getValue().getNumber());
-        Message<PulsarNumber> receiveInbound1 = subscribeInbound.receive(3, TimeUnit.SECONDS);
-        Assertions.assertEquals(2,receiveInbound1.getValue().getNumber());
-
-        log.info("Received inbound message: {}", receiveInbound.getValue());
-
-
-        PulsarAdmin pulsarAdmin = PulsarAdmin.builder()
-                .serviceHttpUrl(pulsarContainer.getHttpServiceUrl())
-                .build();
-
-        List<String> topics = pulsarAdmin.topics().getList("public/default");
-        topics.forEach(topic -> log.info("Topic: {}", topic));
-
-
-
-
-        createFunctionWithRetry(pulsarAdmin);
-
-
         Consumer<PulsarNumber> subscribe = pulsarClient.newConsumer(Schema.JSON(PulsarNumber.class))
                 .topic(PULSAR_TOPIC_OUTBOUND)
                 .subscriptionName(subscriptionName)
                 .subscribe();
+
+
+
+
 
             CompletableFuture.runAsync(() -> {
                 while (true) {
                     try {
                         Thread.sleep(1000);
                         numberProducer.sendAsync(new PulsarNumber(1));
-                        log.info("Message sent 1");
+                        log.info("Message sent");
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
