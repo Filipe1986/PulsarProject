@@ -9,6 +9,7 @@ import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.admin.PulsarAdminException;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.common.functions.FunctionConfig;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 
@@ -36,11 +36,12 @@ class PulsarProjectApplicationTests {
 
     public static final String PULSAR_TOPIC = "pulsar-project";
     public static final String PULSAR_TOPIC_OUTBOUND = "pulsar-project" + "-outbound";
+    public static final String subscriptionName = "test-subscription";
 
-    String subscriptionName = "test-subscription";
+
 
     @RepeatedTest(1)
-    void contextLoads() throws IOException, InterruptedException, PulsarAdminException, ExecutionException {
+    void contextLoads() throws IOException, PulsarAdminException {
 
         PulsarClient pulsarClient = PulsarClient.builder()
                 .serviceUrl(pulsarContainer.getPulsarBrokerUrl())
@@ -89,42 +90,36 @@ class PulsarProjectApplicationTests {
                 while (true) {
                     try {
                         Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    try {
                         numberProducer.sendAsync(new PulsarNumber(1));
-                        log.info("Message sent");
+                        log.info("Message sent 1");
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 }
             });
-            Message<PulsarNumber> receive = subscribe.receive(10, TimeUnit.SECONDS);
 
+            Message<PulsarNumber> receive = subscribe.receive(20, TimeUnit.SECONDS);
+            Assertions.assertEquals(3, receive.getValue().getNumber());
 
-        Assertions.assertNotNull(receive);
-        Assertions.assertEquals(3, receive.getValue().getNumber());
+            numberProducer.sendAsync(new PulsarNumber(1));
+            receive = subscribe.receive(10, TimeUnit.SECONDS);
+            Assertions.assertEquals(3, receive.getValue().getNumber());
 
-        System.out.println(receive.getValue().toString());
+            numberProducer.sendAsync(new PulsarNumber(2));
+            receive = subscribe.receive(10, TimeUnit.SECONDS);
+            Assertions.assertEquals(6, receive.getValue().getNumber());
+
+            numberProducer.sendAsync(new PulsarNumber(3));
+            receive = subscribe.receive(10, TimeUnit.SECONDS);
+            Assertions.assertEquals(9, receive.getValue().getNumber());
 
     }
 
-    private void createFunctionWithRetry(PulsarAdmin pulsarAdmin)
-            throws InterruptedException, ExecutionException {
+    private void createFunctionWithRetry(PulsarAdmin pulsarAdmin) {
 
 
-        FunctionConfig functionConfig = new FunctionConfig();
-        functionConfig.setTenant("public");
-        functionConfig.setNamespace("default");
-        functionConfig.setName("multiply-by-three");
-        functionConfig.setInputs(Collections.singleton(PULSAR_TOPIC));
-        functionConfig.setOutput(PULSAR_TOPIC_OUTBOUND);
-        functionConfig.setClassName("com.filipe.MultiplyByThreeFunction");
-        functionConfig.setRuntime(FunctionConfig.Runtime.JAVA);
-        String jarPath = "../PulsarFunctions/target/PulsarFunctions-0.0.1-SNAPSHOT.jar";
-        functionConfig.setJar(jarPath);
-        int maxRetries = 15;
+        FunctionConfig functionConfig = getFunctionConfig();
+        int maxRetries = 10;
         int retryCount = 0;
         int backoffMs = 2000;
 
@@ -138,6 +133,20 @@ class PulsarProjectApplicationTests {
                 retryCount++;
             }
         }
+    }
+
+    private static @NotNull FunctionConfig getFunctionConfig() {
+        FunctionConfig functionConfig = new FunctionConfig();
+        functionConfig.setTenant("public");
+        functionConfig.setNamespace("default");
+        functionConfig.setName("multiply-by-three");
+        functionConfig.setInputs(Collections.singleton(PULSAR_TOPIC));
+        functionConfig.setOutput(PULSAR_TOPIC_OUTBOUND);
+        functionConfig.setClassName("com.filipe.MultiplyByThreeFunction");
+        functionConfig.setRuntime(FunctionConfig.Runtime.JAVA);
+        String jarPath = "../PulsarFunctions/target/PulsarFunctions-0.0.1-SNAPSHOT.jar";
+        functionConfig.setJar(jarPath);
+        return functionConfig;
     }
 
 }
