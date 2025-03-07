@@ -1,4 +1,4 @@
-package com.filipe.pulsarproject;
+package com.filipe;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,6 +9,6 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class Number {
+public class PulsarNumber {
     private int number;
 }
