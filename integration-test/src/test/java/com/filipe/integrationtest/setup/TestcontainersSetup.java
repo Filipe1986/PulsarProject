@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.testcontainers.containers.PulsarContainer;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
 import java.nio.file.Path;
 import java.util.Collections;
@@ -16,11 +17,20 @@ import java.util.Collections;
 public class TestcontainersSetup {
 
     public final String PULSAR_TOPIC = "pulsar-project";
+
     @Bean
     public PulsarContainer pulsarContainer() {
         PulsarContainer container = new PulsarContainer(
                 DockerImageName.parse("apachepulsar/pulsar:latest"))
                 .withFunctionsWorker()
+
+                .withCopyFileToContainer(
+                        MountableFile.forHostPath(
+                                Path.of("../PulsarFunctions/target/PulsarFunctions-0.0.1-SNAPSHOT.jar")
+                                        .toAbsolutePath()),
+                        "/pulsar/functions/java-functions.jar"
+                )
+                .withCommand("/pulsar/bin/pulsar standalone")
                 .withExposedPorts(8080, 6650);
 
         container.start();
@@ -34,16 +44,6 @@ public class TestcontainersSetup {
                 .build();
     }
 
-    @Bean
-    public PulsarAdmin pulsarAdmin(PulsarContainer pulsarContainer) throws Exception {
-        PulsarAdmin pulsarAdmin = PulsarAdmin.builder()
-                .serviceHttpUrl(pulsarContainer.getHttpServiceUrl())
-                .build();
-        deployFunction(pulsarAdmin, "process", "MultiplyByThreeFunction",
-                Path.of("target/PulsarFunctions-1.0.0-SNAPSHOT.jar"));
-
-        return pulsarAdmin;
-    }
 
 
 
@@ -58,6 +58,8 @@ public class TestcontainersSetup {
                         .name(functionName)
                         .className(className)
                         .inputs(Collections.singleton(PULSAR_TOPIC))
+                        .runtime(FunctionConfig.Runtime.JAVA) // Add this line
+                        .jar(functionPackagePath.toUri().toString())
                         .output("output-topic")
                         .build(),
                 String.valueOf(functionPackagePath.toFile())

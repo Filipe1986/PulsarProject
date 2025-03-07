@@ -2,8 +2,8 @@ package com.filipe.integrationtest;
 
 
 import com.filipe.PulsarNumber;
+import com.filipe.application.PulsarProjectApplication;
 import com.filipe.integrationtest.setup.TestcontainersSetup;
-
 import org.apache.pulsar.client.api.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,9 +12,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.testcontainers.containers.PulsarContainer;
 
+import java.util.concurrent.TimeUnit;
+
 
 @Import(TestcontainersSetup.class)
-@SpringBootTest
+@SpringBootTest(classes = PulsarProjectApplication.class)
 class PulsarProjectApplicationTests {
 
 
@@ -45,8 +47,10 @@ class PulsarProjectApplicationTests {
                 .subscriptionName(subscriptionName)
                 .subscribe()) {
 
-            numberProducer.send(new PulsarNumber(1));
-            receive = subscribe.receive();
+            numberProducer.sendAsync(new PulsarNumber(1)).get(5, TimeUnit.SECONDS);
+            receive = subscribe.receive(5, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
         Assertions.assertNotNull(receive);
