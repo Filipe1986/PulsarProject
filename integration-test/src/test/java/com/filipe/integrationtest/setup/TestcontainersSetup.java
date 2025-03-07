@@ -1,6 +1,5 @@
 package com.filipe.integrationtest.setup;
 
-import jakarta.annotation.PreDestroy;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -28,11 +27,6 @@ public class TestcontainersSetup {
                 )
                 .withCommand("/pulsar/bin/pulsar standalone")
                 .withExposedPorts(8080, 6650);
-    }
-
-    @PreDestroy
-    public void cleanUp(PulsarContainer pulsarContainer) {
-        pulsarContainer.stop();
     }
 
     @Bean
