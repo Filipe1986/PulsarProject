@@ -45,7 +45,6 @@ class PulsarProjectApplicationTests {
         createFunctionWithRetry(pulsarAdmin);
 
 
-
         PulsarClient pulsarClient = PulsarClient.builder()
                 .serviceUrl(pulsarContainer.getPulsarBrokerUrl())
                 .build();
@@ -59,9 +58,6 @@ class PulsarProjectApplicationTests {
                 .topic(PULSAR_TOPIC_OUTBOUND)
                 .subscriptionName(subscriptionName)
                 .subscribe();
-
-
-
 
 
             CompletableFuture.runAsync(() -> {
