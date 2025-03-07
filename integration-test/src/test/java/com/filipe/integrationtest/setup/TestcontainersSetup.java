@@ -4,6 +4,7 @@ import org.apache.pulsar.client.api.PulsarClient;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.testcontainers.containers.PulsarContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
@@ -21,12 +22,13 @@ public class TestcontainersSetup {
 
                 .withCopyFileToContainer(
                         MountableFile.forHostPath(
-                                Path.of("../PulsarFunctions/target/PulsarFunctions-0.0.1-SNAPSHOT.jar")
-                                        .toAbsolutePath()),
+                                Path.of("../PulsarFunctions/target/PulsarFunctions-0.0.1-SNAPSHOT.jar").toAbsolutePath()),
                         "/pulsar/functions/java-functions.jar"
                 )
                 .withCommand("/pulsar/bin/pulsar standalone")
-                .withExposedPorts(8080, 6650);
+                .withLogConsumer(outputFrame -> System.out.print(outputFrame.getUtf8String()))
+                .waitingFor(Wait.forLogMessage(".*Function worker service started.*", 1));
+
     }
 
     @Bean
