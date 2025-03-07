@@ -1,6 +1,7 @@
-package com.filipe.pulsarproject;
+package com.filipe.integrationtest;
 
 
+import com.filipe.application.PulsarProjectApplication;
 import org.springframework.boot.SpringApplication;
 import org.testcontainers.utility.TestcontainersConfiguration;
 
