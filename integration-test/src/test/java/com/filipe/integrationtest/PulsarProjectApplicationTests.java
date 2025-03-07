@@ -37,7 +37,7 @@ class PulsarProjectApplicationTests {
 
     public static final String PULSAR_TOPIC = "pulsar-project";
     public static final String PULSAR_TOPIC_OUTBOUND = "pulsar-project" + "-outbound";
-    public static final String subscriptionName = "test-subscription";
+    public static final String SUBSCRIPTION_NAME = "test-subscription";
 
 
     @RepeatedTest(1)
@@ -56,7 +56,7 @@ class PulsarProjectApplicationTests {
 
         Consumer<PulsarNumber> subscribe = pulsarClient.newConsumer(Schema.JSON(PulsarNumber.class))
                 .topic(PULSAR_TOPIC_OUTBOUND)
-                .subscriptionName(subscriptionName)
+                .subscriptionName(SUBSCRIPTION_NAME)
                 .subscribe();
 
 
